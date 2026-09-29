@@ -112,3 +112,13 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# AI agents - local only (cada compañero usa su propia IA, no commitear)
+opencode.json
+opencode.jsonc
+.opencode/
+.mcp.json
+mcp.json
+claude_desktop_config.json
+unity-mcp-server*.log
+README-IA-local.md
