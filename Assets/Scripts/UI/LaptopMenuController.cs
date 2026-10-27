@@ -202,8 +202,8 @@ public class LaptopMenuController : MonoBehaviour
 
     public void Jugar()
     {
-        Debug.Log("[LaptopMenu] Jugar -> cargando SampleScene");
-        SceneManager.LoadScene("SampleScene");
+        Debug.Log("[LaptopMenu] Jugar -> cargando Oficina");
+        SceneManager.LoadScene("Oficina");
     }
 
     public void PedirConfirmacionSalir() => Mostrar("ConfirmSalir");
