@@ -67,11 +67,19 @@ public class PuestoInteractivo : MonoBehaviour
             j.animator.SetBool("UsandoPC", true);
             j.ApuntarCamara(anclaSentado.eulerAngles.y, 18f);
             EncenderPantalla(true);
+            if (pantallaEncendida != null)
+            {
+                // El escritorio es un canvas World Space: necesita la cámara del jugador para recibir clics.
+                var canvas = pantallaEncendida.GetComponent<Canvas>();
+                if (canvas != null) canvas.worldCamera = j.camara;
+                j.EnfocarPantalla(pantallaEncendida.transform as RectTransform);
+            }
         }
         else if (estado == Estado.UsandoPC)
         {
             estado = Estado.Sentado;
             j.animator.SetBool("UsandoPC", false);
+            j.EnfocarPantalla(null);
             EncenderPantalla(false);
         }
     }
@@ -110,6 +118,7 @@ public class PuestoInteractivo : MonoBehaviour
     IEnumerator RutinaLevantarse(JugadorPrimeraPersona j)
     {
         estado = Estado.Levantandose;
+        j.EnfocarPantalla(null);
         EncenderPantalla(false);
         j.animator.SetBool("UsandoPC", false);
         j.animator.SetBool("Sentado", false);

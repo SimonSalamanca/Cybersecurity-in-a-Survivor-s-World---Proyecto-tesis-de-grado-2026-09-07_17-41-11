@@ -8,7 +8,8 @@ using UnityEngine.UI;
 /// Guía de tutorial en la esquina superior izquierda.
 /// Cada indicación desaparece (con un pequeño desvanecido) cuando el jugador
 /// realiza la acción. Las indicaciones de la computadora aparecen solo
-/// después de sentarse por primera vez. Al completar todo, el panel se oculta.
+/// después de sentarse por primera vez, y las del correo (escritorio del PC)
+/// van apareciendo de una en una al usarla. Al completar todo, el panel se oculta.
 /// </summary>
 public class TutorialHUD : MonoBehaviour
 {
@@ -32,11 +33,13 @@ public class TutorialHUD : MonoBehaviour
     CanvasGroup grupoPanel;
     InputAction accMover, accMirar, accCorrer;
     PuestoInteractivo[] puestos;
+    EscritorioPC escritorio;
 
     // Progreso
     bool w, a, s, d;
     float ratonAcumulado, corriendoAcumulado;
     bool pasosPCMostrados;
+    int pasoCorreo = -1;
 
     void Start()
     {
@@ -49,6 +52,7 @@ public class TutorialHUD : MonoBehaviour
             accCorrer = mapa.FindAction("Sprint");
         }
         puestos = FindObjectsByType<PuestoInteractivo>(FindObjectsSortMode.None);
+        escritorio = FindAnyObjectByType<EscritorioPC>(FindObjectsInactive.Include);
         ConstruirPanel();
         AgregarPaso("mover", TextoMover());
         AgregarPaso("mirar", "Mueve el RATON para mirar alrededor");
@@ -114,6 +118,53 @@ public class TutorialHUD : MonoBehaviour
         if (usando) Completar("usarpc");
         if (pasosPCMostrados && !sentado && Completado("sentarse") && jugador != null && !jugador.ControlBloqueado)
             Completar("levantarse");
+
+        if (usando) PasosCorreo();
+
+        // Con la pantalla en primer plano solo se muestran las indicaciones del PC,
+        // para que el panel quepa sobre el monitor sin tapar el escritorio.
+        bool soloPC = jugador != null && jugador.UsandoPantalla;
+        foreach (var p in pasos)
+            if (p.fila != null && !p.completado) p.fila.SetActive(!soloPC || EsPasoPC(p.id));
+    }
+
+    static bool EsPasoPC(string id) => id == "levantarse" || id.StartsWith("correo_");
+
+    /// <summary>Guía del correo: cada indicación aparece cuando se cumple la anterior.</summary>
+    void PasosCorreo()
+    {
+        var correo = escritorio != null ? escritorio.Correo : null;
+        if (correo == null) return;
+        switch (pasoCorreo)
+        {
+            case -1:
+                AgregarPaso("correo_app", "Haz clic en el icono CORREO del escritorio");
+                pasoCorreo = 0;
+                break;
+            case 0:
+                if (!correo.Abierto) break;
+                Completar("correo_app");
+                AgregarPaso("correo_abrir", "Abre el mensaje nuevo de la bandeja de entrada");
+                pasoCorreo = 1;
+                break;
+            case 1:
+                if (correo.MensajesAbiertos == 0) break;
+                Completar("correo_abrir");
+                AgregarPaso("correo_dialogo", "Pulsa RESPONDER y elige respuestas hasta lograr 100% de confianza");
+                pasoCorreo = 2;
+                break;
+            case 2:
+                if (correo.AtaquesExitosos == 0) break;
+                Completar("correo_dialogo");
+                AgregarPaso("correo_reporte", "Redacta y envia el reporte a tu supervisora");
+                pasoCorreo = 3;
+                break;
+            case 3:
+                if (correo.ReportesEnviados == 0) break;
+                Completar("correo_reporte");
+                pasoCorreo = 4;
+                break;
+        }
     }
 
     string TextoMover()

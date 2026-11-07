@@ -12,6 +12,8 @@ using UnityEngine.UI;
 ///   que no tape la cámara; el cuerpo se sigue viendo al mirar hacia abajo.
 /// - Respeta los ajustes de Gameplay (sensibilidad, invertir Y) y Gráficos (FOV),
 ///   y libera el cursor cuando el juego está en pausa (Time.timeScale == 0).
+/// - Al usar la computadora la cámara se acerca a la pantalla y el cursor queda
+///   libre para manejar el escritorio (EscritorioPC).
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
 public class JugadorPrimeraPersona : MonoBehaviour
@@ -36,9 +38,17 @@ public class JugadorPrimeraPersona : MonoBehaviour
     [Header("Interacción")]
     public float distanciaInteraccion = 2.2f;
 
+    [Header("Uso de la computadora (la cámara se acerca a la pantalla)")]
+    [Tooltip("Fracción del alto de la vista que ocupa la pantalla.")]
+    public float altoPantallaEnVista = 0.78f;
+    [Tooltip("Centro vertical de la pantalla en la vista (-1 abajo, 1 arriba). Negativo deja sitio arriba para el tutorial.")]
+    public float centroPantallaEnVista = -0.06f;
+    public float duracionEnfoque = 0.45f;
+
     // Estado
     public bool ControlBloqueado { get; private set; }
     public float Yaw => yaw;
+    public bool UsandoPantalla => pantallaEnfocada != null;
 
     InputAction accMover, accMirar, accInteractuar, accCorrer;
     CharacterController cc;
@@ -46,6 +56,9 @@ public class JugadorPrimeraPersona : MonoBehaviour
     bool limitarYaw; float yawCentro, yawRango;
     Vector3 posCamaraSuave;
     bool camaraInicializada;
+    RectTransform pantallaEnfocada, ultimaPantalla;
+    float pesoEnfoque;
+    readonly Vector3[] esquinas = new Vector3[4];
 
     // HUD
     Text textoPrompt;
@@ -93,9 +106,11 @@ public class JugadorPrimeraPersona : MonoBehaviour
             if (Cursor.lockState != CursorLockMode.None) BloquearCursor(false);
             return;
         }
-        if (Cursor.lockState != CursorLockMode.Locked) BloquearCursor(true);
+        // Usando la computadora el cursor queda libre para hacer clic en el escritorio.
+        bool bloquear = !UsandoPantalla;
+        if ((Cursor.lockState == CursorLockMode.Locked) != bloquear) BloquearCursor(bloquear);
 
-        Mirar();
+        if (!UsandoPantalla) Mirar();
         if (!ControlBloqueado) Mover();
         else if (animator != null) animator.SetFloat("Velocidad", 0f);
 
@@ -154,8 +169,19 @@ public class JugadorPrimeraPersona : MonoBehaviour
             : transform.position + Vector3.up * 1.6f;
         if (!camaraInicializada) { posCamaraSuave = objetivo; camaraInicializada = true; }
         posCamaraSuave = Vector3.Lerp(posCamaraSuave, objetivo, 1f - Mathf.Exp(-suavizadoCamara * Time.unscaledDeltaTime));
-        camara.transform.position = posCamaraSuave;
-        camara.transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+        Vector3 pos = posCamaraSuave;
+        Quaternion rot = Quaternion.Euler(pitch, yaw, 0f);
+
+        // Al usar la computadora la cámara se acerca a la pantalla (y vuelve al dejarla).
+        pesoEnfoque = Mathf.MoveTowards(pesoEnfoque, UsandoPantalla ? 1f : 0f, Time.unscaledDeltaTime / duracionEnfoque);
+        if (pesoEnfoque > 0f && ultimaPantalla != null)
+        {
+            PoseEnfoque(ultimaPantalla, out var posPantalla, out var rotPantalla);
+            float s = Mathf.SmoothStep(0f, 1f, pesoEnfoque);
+            pos = Vector3.Lerp(pos, posPantalla, s);
+            rot = Quaternion.Slerp(rot, rotPantalla, s);
+        }
+        camara.transform.SetPositionAndRotation(pos, rot);
         // Oculta la cabeza solo para el render (después de que el Animator la posicionó).
         if (huesoCabeza != null) huesoCabeza.localScale = Vector3.one * 0.0001f;
     }
@@ -217,6 +243,27 @@ public class JugadorPrimeraPersona : MonoBehaviour
         yaw = nuevoYaw; pitch = nuevoPitch;
     }
 
+    /// <summary>Acerca la cámara a la pantalla dada (canvas World Space); null para volver a la vista normal.</summary>
+    public void EnfocarPantalla(RectTransform pantalla)
+    {
+        pantallaEnfocada = pantalla;
+        if (pantalla != null) ultimaPantalla = pantalla;
+    }
+
+    void PoseEnfoque(RectTransform pantalla, out Vector3 pos, out Quaternion rot)
+    {
+        pantalla.GetWorldCorners(esquinas); // 0 abajo-izq, 1 arriba-izq, 2 arriba-der, 3 abajo-der
+        Vector3 centro = (esquinas[0] + esquinas[2]) * 0.5f;
+        float ancho = Vector3.Distance(esquinas[0], esquinas[3]);
+        float alto = Vector3.Distance(esquinas[0], esquinas[1]);
+        // Alto de la vista a la distancia de la pantalla: que ocupe la fracción pedida y quepa a lo ancho.
+        float altoVista = Mathf.Max(alto / altoPantallaEnVista, ancho / (0.96f * camara.aspect));
+        float distancia = altoVista * 0.5f / Mathf.Tan(camara.fieldOfView * 0.5f * Mathf.Deg2Rad);
+        Vector3 adelante = pantalla.forward, arriba = pantalla.up;
+        pos = centro - adelante * distancia - arriba * (centroPantallaEnVista * altoVista * 0.5f);
+        rot = Quaternion.LookRotation(adelante, arriba);
+    }
+
     // ---------------- HUD ----------------
 
     void CrearHud()
@@ -256,6 +303,8 @@ public class JugadorPrimeraPersona : MonoBehaviour
     {
         if (textoPrompt == null) return;
         textoPrompt.text = texto ?? "";
+        // Con la pantalla en primer plano el aviso baja para no tapar la barra de tareas.
+        textoPrompt.rectTransform.anchoredPosition = new Vector2(0, UsandoPantalla ? 38 : 110);
         if (mira != null) mira.enabled = puestoActual == null;
     }
 
