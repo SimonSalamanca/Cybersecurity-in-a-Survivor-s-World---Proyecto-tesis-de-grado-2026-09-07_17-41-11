@@ -9,6 +9,7 @@ using UnityEngine.AI;
 ///   Caminar -> va a un punto aleatorio del NavMesh.
 ///   Sentado -> busca una silla libre (SillaNPC), se sienta, a veces usa la
 ///              computadora, y luego se levanta.
+/// Si el jugador le habla (DialogoNPC) se detiene, lo mira y retoma después.
 /// Pasa de un estado a otro al azar usando pesos configurables.
 /// Usa los parámetros del Animator: Velocidad, Sentado, UsandoPC.
 /// </summary>
@@ -44,6 +45,17 @@ public class NPCOficina : MonoBehaviour
 
     NavMeshAgent agente;
     SillaNPC sillaActual;
+    Transform interlocutor;
+
+    /// <summary>True mientras el jugador conversa con este NPC (ver DialogoNPC).</summary>
+    public bool EnConversacion => interlocutor != null;
+
+    /// <summary>Detiene al NPC y lo hace mirar al jugador; null para que siga con su rutina.</summary>
+    public void Conversar(Transform jugador)
+    {
+        interlocutor = jugador;
+        if (agente.enabled) agente.isStopped = jugador != null;
+    }
 
     void Awake()
     {
@@ -64,6 +76,13 @@ public class NPCOficina : MonoBehaviour
 
     void Update()
     {
+        // De pie, mientras conversa, se gira hacia el jugador (sentado se queda mirando al escritorio).
+        if (EnConversacion && agente.enabled)
+        {
+            Vector3 dir = interlocutor.position - transform.position; dir.y = 0f;
+            if (dir.sqrMagnitude > 0.001f)
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(dir), 240f * Time.deltaTime);
+        }
         if (animator == null) return;
         float v = agente.enabled ? agente.velocity.magnitude : 0f;
         animator.SetFloat("Velocidad", v > 0.05f ? 1f : 0f, 0.1f, Time.deltaTime);
@@ -109,6 +128,7 @@ public class NPCOficina : MonoBehaviour
         float fin = Time.time + Random.Range(tiempoQuieto.x, tiempoQuieto.y);
         while (Time.time < fin)
         {
+            if (EnConversacion) { fin += Time.deltaTime; yield return null; continue; }
             transform.rotation = Quaternion.RotateTowards(transform.rotation, objetivo, 90f * Time.deltaTime);
             yield return null;
         }
@@ -150,12 +170,15 @@ public class NPCOficina : MonoBehaviour
         {
             animator.SetBool("UsandoPC", true);
             silla.EncenderPantalla(true);
-            yield return new WaitForSeconds(duracion);
+            yield return Esperar(duracion);
             animator.SetBool("UsandoPC", false);
             silla.EncenderPantalla(false);
             yield return new WaitForSeconds(0.4f);
         }
-        else yield return new WaitForSeconds(duracion);
+        else yield return Esperar(duracion);
+
+        // No se levanta en mitad de una conversación.
+        while (EnConversacion) yield return null;
 
         // Se levanta y vuelve al punto de acceso.
         animator.SetBool("Sentado", false);
@@ -183,6 +206,9 @@ public class NPCOficina : MonoBehaviour
         while (agente.pathPending) yield return null;
         while (Time.time < limite)
         {
+            // Mientras conversa queda detenido y el tiempo límite no corre.
+            if (EnConversacion) { limite += Time.deltaTime; yield return null; continue; }
+            if (agente.isStopped) agente.isStopped = false;
             if (!agente.pathPending && agente.remainingDistance <= agente.stoppingDistance + 0.05f
                 && (!agente.hasPath || agente.velocity.sqrMagnitude < 0.01f))
             {
@@ -193,6 +219,16 @@ public class NPCOficina : MonoBehaviour
         }
         agente.ResetPath();
         resultado?.Invoke(false);
+    }
+
+    /// <summary>Espera como WaitForSeconds, pero el tiempo no corre mientras conversa.</summary>
+    IEnumerator Esperar(float segundos)
+    {
+        while (segundos > 0f)
+        {
+            if (!EnConversacion) segundos -= Time.deltaTime;
+            yield return null;
+        }
     }
 
     bool PuntoAleatorio(out Vector3 punto)

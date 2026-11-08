@@ -58,6 +58,7 @@ public class TutorialHUD : MonoBehaviour
         AgregarPaso("mirar", "Mueve el RATON para mirar alrededor");
         AgregarPaso("correr", "Manten [SHIFT] mientras caminas para correr");
         AgregarPaso("sentarse", "Ve al puesto del centro junto a la ventana y pulsa [E] en la silla");
+        AgregarPaso("hablar", "Mira a un colega y pulsa [E] para hablar con el");
         AgregarPaso("pausa", "Pulsa [ESC] o [P] para pausar el juego");
     }
 
@@ -96,6 +97,9 @@ public class TutorialHUD : MonoBehaviour
             if (corriendo) corriendoAcumulado += Time.deltaTime;
             if (corriendoAcumulado > tiempoCorriendo) Completar("correr");
         }
+
+        // --- Conversar con un NPC ---
+        if (jugador != null && jugador.EnDialogo) Completar("hablar");
 
         // --- Interacciones con el puesto ---
         bool sentado = false, usando = false;

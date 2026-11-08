@@ -14,6 +14,8 @@ using UnityEngine.UI;
 ///   y libera el cursor cuando el juego está en pausa (Time.timeScale == 0).
 /// - Al usar la computadora la cámara se acerca a la pantalla y el cursor queda
 ///   libre para manejar el escritorio (EscritorioPC).
+/// - Mirando a un NPC con DialogoNPC, [E] abre una conversación (DialogoHUD):
+///   el jugador queda quieto y la cámara se gira hacia la cara del NPC.
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
 public class JugadorPrimeraPersona : MonoBehaviour
@@ -49,6 +51,8 @@ public class JugadorPrimeraPersona : MonoBehaviour
     public bool ControlBloqueado { get; private set; }
     public float Yaw => yaw;
     public bool UsandoPantalla => pantallaEnfocada != null;
+    public bool EnDialogo => dialogo != null && dialogo.Activo;
+    public DialogoHUD Dialogo => dialogo;
 
     InputAction accMover, accMirar, accInteractuar, accCorrer;
     CharacterController cc;
@@ -65,6 +69,9 @@ public class JugadorPrimeraPersona : MonoBehaviour
     Image mira;
     PuestoInteractivo puestoMirado;
     PuestoInteractivo puestoActual;
+    DialogoNPC npcMirado;
+    DialogoHUD dialogo;
+    float interaccionLibreDesde;
 
     void Awake()
     {
@@ -85,6 +92,8 @@ public class JugadorPrimeraPersona : MonoBehaviour
         }
         yaw = transform.eulerAngles.y;
         CrearHud();
+        dialogo = gameObject.AddComponent<DialogoHUD>();
+        dialogo.jugador = this;
     }
 
     void OnEnable() { acciones?.FindActionMap("Player")?.Enable(); }
@@ -106,9 +115,18 @@ public class JugadorPrimeraPersona : MonoBehaviour
             if (Cursor.lockState != CursorLockMode.None) BloquearCursor(false);
             return;
         }
-        // Usando la computadora el cursor queda libre para hacer clic en el escritorio.
-        bool bloquear = !UsandoPantalla;
+        // Usando la computadora (o conversando) el cursor queda libre para hacer clic.
+        bool bloquear = !UsandoPantalla && !EnDialogo;
         if ((Cursor.lockState == CursorLockMode.Locked) != bloquear) BloquearCursor(bloquear);
+
+        if (EnDialogo)
+        {
+            MirarHacia(dialogo.Interlocutor.PuntoMirada);
+            if (animator != null) animator.SetFloat("Velocidad", 0f, 0.1f, Time.deltaTime);
+            dialogo.ProcesarEntrada(PulsoInteractuar());
+            MostrarPrompt(null);
+            return;
+        }
 
         if (!UsandoPantalla) Mirar();
         if (!ControlBloqueado) Mover();
@@ -137,6 +155,20 @@ public class JugadorPrimeraPersona : MonoBehaviour
             yaw = yawCentro + delta;
         }
         // De pie el cuerpo gira con la mirada; sentado el cuerpo queda fijo.
+        if (!ControlBloqueado) transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+    }
+
+    /// <summary>Gira la mirada (y el cuerpo, de pie) suavemente hacia un punto: la cara del NPC.</summary>
+    void MirarHacia(Vector3 punto)
+    {
+        if (camara == null) return;
+        Vector3 dir = punto - camara.transform.position;
+        if (dir.sqrMagnitude < 0.0001f) return;
+        float yawObjetivo = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+        float pitchObjetivo = -Mathf.Asin(Mathf.Clamp(dir.normalized.y, -1f, 1f)) * Mathf.Rad2Deg;
+        float k = 1f - Mathf.Exp(-7f * Time.deltaTime);
+        yaw = Mathf.LerpAngle(yaw, yawObjetivo, k);
+        pitch = Mathf.Clamp(Mathf.LerpAngle(pitch, pitchObjetivo, k), -limitePitch, limitePitch);
         if (!ControlBloqueado) transform.rotation = Quaternion.Euler(0f, yaw, 0f);
     }
 
@@ -191,6 +223,7 @@ public class JugadorPrimeraPersona : MonoBehaviour
     void DetectarInteraccion()
     {
         puestoMirado = null;
+        npcMirado = null;
         if (puestoActual == null && camara != null)
         {
             var rayo = new Ray(camara.transform.position, camara.transform.forward);
@@ -198,11 +231,12 @@ public class JugadorPrimeraPersona : MonoBehaviour
             {
                 var p = hit.collider.GetComponentInParent<PuestoInteractivo>();
                 if (p != null && p.EsObjetivo(hit.collider)) puestoMirado = p;
+                else npcMirado = hit.collider.GetComponentInParent<DialogoNPC>();
             }
         }
 
-        bool pulsoE = accInteractuar != null ? accInteractuar.WasPressedThisFrame()
-                                              : (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame);
+        // Tras cerrar un diálogo la misma pulsación no debe abrir otro.
+        bool pulsoE = PulsoInteractuar() && Time.time >= interaccionLibreDesde;
         bool pulsoQ = Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame;
 
         if (puestoActual != null)
@@ -216,8 +250,19 @@ public class JugadorPrimeraPersona : MonoBehaviour
             MostrarPrompt("[E] Sentarse");
             if (pulsoE) puestoMirado.Sentarse(this);
         }
+        else if (npcMirado != null)
+        {
+            MostrarPrompt("[E] Hablar con " + npcMirado.Perfil.nombre);
+            if (pulsoE) dialogo.Iniciar(npcMirado);
+        }
         else MostrarPrompt(null);
     }
+
+    bool PulsoInteractuar() => accInteractuar != null ? accInteractuar.WasPressedThisFrame()
+                                                      : (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame);
+
+    /// <summary>Llamado por DialogoHUD al cerrar la conversación.</summary>
+    public void FinDialogo() { interaccionLibreDesde = Time.time + 0.25f; }
 
     // API usada por PuestoInteractivo
     public void EntrarEnPuesto(PuestoInteractivo p, float yawMirada, float rangoYaw)
@@ -305,7 +350,7 @@ public class JugadorPrimeraPersona : MonoBehaviour
         textoPrompt.text = texto ?? "";
         // Con la pantalla en primer plano el aviso baja para no tapar la barra de tareas.
         textoPrompt.rectTransform.anchoredPosition = new Vector2(0, UsandoPantalla ? 38 : 110);
-        if (mira != null) mira.enabled = puestoActual == null;
+        if (mira != null) mira.enabled = puestoActual == null && !EnDialogo;
     }
 
     void BloquearCursor(bool bloquear)

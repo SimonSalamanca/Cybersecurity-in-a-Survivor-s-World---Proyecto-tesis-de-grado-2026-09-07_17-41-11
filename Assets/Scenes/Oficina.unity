@@ -433,6 +433,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 246219873}
   m_CullTransparentMesh: 1
+--- !u!4 &282060573 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8478534453646001386, guid: ff40b33b78f095449896b88bcb693420, type: 3}
+  m_PrefabInstance: {fileID: 1916323517}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &307914726
 GameObject:
   m_ObjectHideFlags: 0
@@ -759,6 +764,11 @@ Transform:
 Transform:
   m_CorrespondingSourceObject: {fileID: 5864668685836726253, guid: afd29e032d64b9449a14d3b3cee3820b, type: 3}
   m_PrefabInstance: {fileID: 526982686}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &541742885 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8478534453646001386, guid: 1ccf2fcd13e1ca241a36c459e92c7306, type: 3}
+  m_PrefabInstance: {fileID: 1204050882}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &554453351
 GameObject:
@@ -1156,6 +1166,7 @@ GameObject:
   - component: {fileID: 679156497}
   - component: {fileID: 679156496}
   - component: {fileID: 679156495}
+  - component: {fileID: 679156498}
   m_Layer: 0
   m_Name: NPC_Hombre_A
   m_TagString: Untagged
@@ -1249,6 +1260,20 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &679156498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 679156493}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d1698d7e4ccc8747a55fdc8d200db99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogoNPC
+  idPerfil: Julian
+  cabeza: {fileID: 282060573}
 --- !u!1 &682688273
 GameObject:
   m_ObjectHideFlags: 0
@@ -2104,6 +2129,7 @@ GameObject:
   - component: {fileID: 934918230}
   - component: {fileID: 934918229}
   - component: {fileID: 934918228}
+  - component: {fileID: 934918231}
   m_Layer: 0
   m_Name: NPC_Mujer_A
   m_TagString: Untagged
@@ -2197,6 +2223,20 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &934918231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 934918226}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d1698d7e4ccc8747a55fdc8d200db99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogoNPC
+  idPerfil: Diana
+  cabeza: {fileID: 1444949898}
 --- !u!1001 &953190319
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2415,6 +2455,7 @@ GameObject:
   - component: {fileID: 1002972912}
   - component: {fileID: 1002972911}
   - component: {fileID: 1002972910}
+  - component: {fileID: 1002972913}
   m_Layer: 0
   m_Name: NPC_Mujer_B
   m_TagString: Untagged
@@ -2508,6 +2549,20 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &1002972913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1002972908}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d1698d7e4ccc8747a55fdc8d200db99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogoNPC
+  idPerfil: Elena
+  cabeza: {fileID: 1446797326}
 --- !u!1 &1008034168
 GameObject:
   m_ObjectHideFlags: 0
@@ -4694,6 +4749,16 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1433684821}
   m_CullTransparentMesh: 1
+--- !u!4 &1444949898 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8478534453646001386, guid: 3873e8b2c72f9b545801d66830c92ee1, type: 3}
+  m_PrefabInstance: {fileID: 778545398}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1446797326 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8478534453646001386, guid: 2f4f8867df25d97458cdaaf077a726bc, type: 3}
+  m_PrefabInstance: {fileID: 1077082101}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1469827991
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6529,6 +6594,7 @@ GameObject:
   - component: {fileID: 2141308503}
   - component: {fileID: 2141308502}
   - component: {fileID: 2141308501}
+  - component: {fileID: 2141308504}
   m_Layer: 0
   m_Name: NPC_Hombre_B
   m_TagString: Untagged
@@ -6622,6 +6688,20 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &2141308504
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2141308499}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d1698d7e4ccc8747a55fdc8d200db99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogoNPC
+  idPerfil: Mateo
+  cabeza: {fileID: 541742885}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
